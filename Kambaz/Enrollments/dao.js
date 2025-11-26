@@ -1,29 +1,40 @@
-import { v4 as uuidv4 } from "uuid";
+import model from "./model.js";
 export default function EnrollmentsDao(db) {
+  async function findCoursesForUser(userId) {
+    console.log("Finding courses for user:", userId);
+    const enrollments = await model.find({ user: userId });
+    console.log("Found enrollments:", enrollments);
+
+    const enrollmentsWithCourses = await model
+      .find({ user: userId })
+      .populate("course");
+    console.log("Populated enrollments:", enrollmentsWithCourses);
+
+    return enrollmentsWithCourses.map((enrollment) => enrollment.course);
+  }
+  async function findUsersForCourse(courseId) {
+    const enrollments = await model.find({ course: courseId }).populate("user");
+    return enrollments.map((enrollment) => enrollment.user);
+  }
   function enrollUserInCourse(userId, courseId) {
-    const { enrollments } = db;
-    const existingEnrollment = enrollments.find(
-      (e) => e.user === userId && e.course === courseId
-    );
-    if (existingEnrollment) {
-      return existingEnrollment;
-    }
-    const newEnrollment = { _id: uuidv4(), user: userId, course: courseId };
-    db.enrollments = [...db.enrollments, newEnrollment];
-    return newEnrollment;
+    return model.create({
+      user: userId,
+      course: courseId,
+      _id: `${userId}-${courseId}`,
+    });
+  }
+  function unenrollUserFromCourse(user, course) {
+    return model.deleteOne({ user, course });
+  }
+  function unenrollAllUsersFromCourse(courseId) {
+    return model.deleteMany({ course: courseId });
   }
 
-  function unenrollUserFromCourse(userId, courseId) {
-    const { enrollments } = db;
-    db.enrollments = enrollments.filter(
-      (e) => !(e.user === userId && e.course === courseId)
-    );
-    console.log("After unenroll, remaining enrollments:", db.enrollments); // Add this debug log
-  }
-
-  function findEnrollmentForUser(userId) {
-    const { enrollments } = db;
-    return enrollments.filter((e) => e.user === userId);
-  }
-  return { enrollUserInCourse, unenrollUserFromCourse, findEnrollmentForUser };
+  return {
+    findCoursesForUser,
+    findUsersForCourse,
+    enrollUserInCourse,
+    unenrollUserFromCourse,
+    unenrollAllUsersFromCourse,
+  };
 }
