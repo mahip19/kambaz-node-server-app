@@ -12,7 +12,12 @@ export default function UsersDao() {
       $or: [{ firstName: { $regex: regex } }, { lastName: { $regex: regex } }],
     });
   };
-  const findAllUsers = () => model.find();
+  const findAllUsers = () => {
+    console.log("Attempting to find all users...");
+    const users = model.find();
+    console.log(`Found ${users.length} users in database`);
+    return users;
+  };
   const findUserById = (userId) => model.findById(userId);
   const findUserByUsername = (username) =>
     model.findOne({ username: username });
